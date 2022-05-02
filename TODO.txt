@@ -1,0 +1,2 @@
+Gestire il grafo trasposto
+Migliorare l'efficienza
