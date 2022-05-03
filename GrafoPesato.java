@@ -3,31 +3,56 @@ package it.univr.GrafoPesato;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 
 public class GrafoPesato {
 	private List<Node> nodiGrafo = new ArrayList<>();
 	private List<Node> topologicalGraph = new ArrayList<>();
+	private List<Node> trasposto = new LinkedList<Node>();
+
 	public GrafoPesato(String...nodi) {
 		for (String x : nodi) {
 			nodiGrafo.add(new Node(x));
 		}
 	}
-	
-	public void newEdge(int weight, Node from, Node to) {
+	public void newEdge(int weight, String from, String to) {
 		for (Node x : nodiGrafo) {
-			if (x.name.compareTo(from.name) == 0)
+			if (x.name.compareTo(from) == 0)
 				//aggiungo un nodo alla lista di adiacenza di form
-				x.addEdge(weight, to);
+				x.addEdge(weight,getNode(to));
 		}
 	}
+	public void newNode(String name) {
+		if(!nodiGrafo.contains(getNode(name)))
+			nodiGrafo.add(new Node(name));
+	}
 	
-	public void print() {
+	public void print() {		
 		for (Node node : nodiGrafo) {
 			System.out.println(node.toString() + " -> " + node.adj.toString());
 		}
+		System.out.print("\n");
+
 	}
 	
-	public void bfs(Node source) {
+	public void trasposto() {
+		trasposto = new LinkedList<GrafoPesato.Node>();
+		for (Node node : nodiGrafo) {
+			for (Edge edge : node.adj) {
+				if(!trasposto.contains(edge.destination)) 
+					trasposto.add(new Node(edge.destination.name));
+				for (Node x : trasposto) {
+					if(x.equals(edge.destination))
+						x.addEdge(edge.weight, node);
+				}
+			}
+		}
+		nodiGrafo = trasposto;
+	}
+	
+	public void bfs(String s) {
+		Node source = getNode(s);
 		this.resetNodes();
 		Node u;
 		source.distance=0;
@@ -40,7 +65,8 @@ public class GrafoPesato {
 			for (Edge v : u.adj) {
 				if (v.destination.color.compareTo("white") == 0) {
 					v.destination.setGray();
-					v.destination.distance= u.distance + v.destination.distance;
+					v.destination.distance= u.distance + 1; //numero livelli
+					v.destination.distance = v.weight; //aggiornamento del peso dall'arco al prossimo nodo
 					v.destination.pi = u;
 					q.add(v.destination);
 				}
@@ -81,29 +107,36 @@ public class GrafoPesato {
 			System.out.println(x.name + "(" + x.distance +"/"+ x.endTime +")");
 		}
 	}
-
-	public void printPath(Node source, Node destination) {
+	
+	public void printPath(String s, String d) {
+		Node source = getNode(s);
+		Node destination = getNode(d);
 		if (source.equals(destination))
 			System.out.print(source.toString());
 		else if (destination.pi == null){
 			System.out.println("Non ci sono destinazioni");
 		}else{
-			printPath(source, destination.pi);
-			System.out.print( " --> " + destination.toString() );
+			printPath(source.name, destination.pi.name);
+			System.out.print( " ---"+ destination.distance + "--> " + destination.toString());
 		}
 	}
-	
+	/*
+	 * ogni volta che applico un algoritmo applico il reset per non avere risultati ambigui
+	 */
 	private void resetNodes() {
 		for (Node node : nodiGrafo) {
 			node.setWhite();
 			node.pi=null;
-			node.distance=0;
+			node.distance=Integer.MAX_VALUE;
 			node.endTime=0;
 			topologicalGraph = new ArrayList<>();
 		}
 	}
 	
-	public Node getNode(String name) {
+	/*
+	 * data una stringa restituisce il nodo appartenente al grafo
+	 */
+	private Node getNode(String name) {
 		for (Node node : nodiGrafo) {
 			if(node.name.compareTo(name)==0)
 				return node;
@@ -112,12 +145,13 @@ public class GrafoPesato {
 	}
 	
 	/*
-	 * Algoritmi su grafi
+	 * Ordinamento topologico
 	 */
 	public void topologicalSort() {
 		this.resetNodes();
 		this.dfs();
 		java.util.Collections.reverse(topologicalGraph);
+		System.out.println("");
 		for (Node x : topologicalGraph) {
 			System.out.println(x.name + "(" + x.distance +"/"+ x.endTime +")");
 		}
